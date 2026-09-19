@@ -67,12 +67,15 @@ export default async function middleware(request) {
     if (timingSafeEqual(u, user) && timingSafeEqual(p, pass)) {
       const expiry = Date.now() + MAX_AGE_MS;
       const sig = await sign(String(expiry), secret);
-      const res = Response.redirect(new URL("/", request.url), 303);
-      res.headers.append(
-        "Set-Cookie",
-        `${COOKIE_NAME}=${expiry}.${sig}; Path=/; Max-Age=${MAX_AGE_MS / 1000}; HttpOnly; Secure; SameSite=Lax`
-      );
-      return res;
+      // Response.redirect()가 만든 응답은 헤더가 불변이라 나중에 append 하면
+      // 런타임에서 예외가 난다(Edge 런타임 공통 함정) — 생성 시점에 다 넣는다.
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: "/",
+          "Set-Cookie": `${COOKIE_NAME}=${expiry}.${sig}; Path=/; Max-Age=${MAX_AGE_MS / 1000}; HttpOnly; Secure; SameSite=Lax`,
+        },
+      });
     }
     return Response.redirect(new URL("/login.html?error=1", request.url), 303);
   }
