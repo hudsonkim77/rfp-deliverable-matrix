@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RFP 요구사항 × 산출물 매트릭스 — 고향사랑e음 클라우드 네이티브 전환</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2a5fd6">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+</head>
+<body>
+<header>
+  <div class="head-row">
+    <div>
+      <h1>RFP 요구사항 × 산출물 매트릭스</h1>
+      <p class="sub">고향사랑e음 클라우드 네이티브 전환 사업 · 요구사항 93건</p>
+    </div>
+    <button id="abbr-btn" class="ghost-btn" type="button">RFP 약어표</button>
+  </div>
+</header>
+
+<dialog id="abbr-modal">
+  <div class="modal-head">
+    <h2>RFP 분류코드 약어표</h2>
+    <button id="abbr-close" class="icon-btn" type="button" aria-label="닫기">✕</button>
+  </div>
+  <div class="modal-body">
+    <p class="modal-note">
+      영문 풀네임은 RFP 원문에 명시돼 있지 않아, 한글 뜻(분류명)을 그대로 옮긴
+      <b>추정 표기</b>입니다. 한글 뜻이 원문 기준입니다.
+    </p>
+    <table id="abbr-table">
+      <thead><tr><th>코드</th><th>영문 풀네임(추정)</th><th>한글 뜻</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</dialog>
+
+<div class="controls">
+  <input id="search" type="search" placeholder="RFP번호·요구사항·산출물 검색…" autocomplete="off">
+  <select id="stage-filter">
+    <option value="">단계 전체</option>
+  </select>
+  <span id="count" class="count"></span>
+</div>
+
+<div class="table-wrap">
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th data-key="rfp" class="col-rfp">RFP번호</th>
+        <th data-key="summary" class="col-req">요구사항 내용</th>
+        <th data-key="deliverables" class="col-out">산출물명</th>
+        <th data-key="stage" class="col-stage">단계(클라우드 네이티브 관점)</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
