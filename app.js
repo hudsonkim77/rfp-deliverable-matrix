@@ -30,6 +30,9 @@ let sortKey = "rfp";
 let sortDir = 1;
 
 const $ = (id) => document.getElementById(id);
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+}[char]));
 
 function stageClass(stage) {
   return STAGE_CLASS[stage] || "s-na";
@@ -42,7 +45,7 @@ function render() {
   let rows = ROWS.filter((r) => {
     if (stage && r.stage !== stage) return false;
     if (!q) return true;
-    return [r.rfp, r.title, r.summary, r.deliverables, r.stage]
+    return [r.rfp, r.title, r.summary, r.deliverables, r.stage, ...(r.requirements_detail || [])]
       .join(" ").toLowerCase().includes(q);
   });
 
@@ -54,14 +57,27 @@ function render() {
   $("count").textContent = `${rows.length} / ${ROWS.length}건`;
   $("tbody").innerHTML = rows.map((r) => `
     <tr>
-      <td class="col-rfp">${r.rfp}</td>
+      <td class="col-rfp">${escapeHtml(r.rfp)}</td>
       <td class="col-req">
-        <p class="req-title">${r.title}</p>
-        <p class="req-summary">${r.summary}</p>
+        <p class="req-title">${escapeHtml(r.title)}</p>
+        <p class="req-summary">${escapeHtml(r.summary)}</p>
+        <button class="detail-btn" type="button" data-rfp="${escapeHtml(r.rfp)}">세부내용 보기</button>
       </td>
-      <td class="col-out">${r.deliverables.replace(/;\s*/g, "<br>")}</td>
-      <td class="col-stage"><span class="badge ${stageClass(r.stage)}">${r.stage}</span></td>
+      <td class="col-out">${escapeHtml(r.deliverables).replace(/;\s*/g, "<br>")}</td>
+      <td class="col-stage"><span class="badge ${stageClass(r.stage)}">${escapeHtml(r.stage)}</span></td>
     </tr>`).join("");
+}
+
+function openDetail(rfp) {
+  const row = ROWS.find((item) => item.rfp === rfp);
+  if (!row) return;
+  $("detail-title").textContent = `${row.rfp} · ${row.title}`;
+  $("detail-category").textContent = row.category;
+  $("detail-summary").textContent = row.summary;
+  $("detail-deliverables").textContent = row.deliverables === "-" ? "명시된 산출물 없음" : row.deliverables;
+  $("detail-list").innerHTML = (row.requirements_detail || [row.summary])
+    .map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  $("detail-modal").showModal();
 }
 
 async function boot() {
@@ -70,10 +86,14 @@ async function boot() {
   const stages = [...new Set(ROWS.map((r) => r.stage))].sort();
   $("stage-filter").innerHTML =
     `<option value="">단계 전체</option>` +
-    stages.map((s) => `<option value="${s}">${s}</option>`).join("");
+    stages.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
 
   $("search").addEventListener("input", render);
   $("stage-filter").addEventListener("change", render);
+  $("tbody").addEventListener("click", (event) => {
+    const button = event.target.closest(".detail-btn");
+    if (button) openDetail(button.dataset.rfp);
+  });
   document.querySelectorAll("thead th").forEach((th) => {
     th.addEventListener("click", () => {
       const key = th.dataset.key;
@@ -83,13 +103,18 @@ async function boot() {
     });
   });
 
-  document.querySelector("#abbr-table tbody").innerHTML = ABBR.map(
+  $("abbr-table").querySelector("tbody").innerHTML = ABBR.map(
     ([code, en, ko]) => `<tr><td>${code}</td><td>${en}</td><td>${ko}</td></tr>`
   ).join("");
-  const modal = $("abbr-modal");
-  $("abbr-btn").addEventListener("click", () => modal.showModal());
-  $("abbr-close").addEventListener("click", () => modal.close());
-  modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); });
+  const abbrModal = $("abbr-modal");
+  $("abbr-btn").addEventListener("click", () => abbrModal.showModal());
+  $("abbr-close").addEventListener("click", () => abbrModal.close());
+
+  const detailModal = $("detail-modal");
+  $("detail-close").addEventListener("click", () => detailModal.close());
+  [abbrModal, detailModal].forEach((modal) => modal.addEventListener("click", (event) => {
+    if (event.target === modal) modal.close();
+  }));
 
   render();
 }
