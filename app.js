@@ -33,6 +33,11 @@ const $ = (id) => document.getElementById(id);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
 }[char]));
+const formatMultiline = (value) => escapeHtml(value).replace(/\r?\n/g, "<br>");
+const comparison = (row, key) => row.task_comparison?.[key] || "";
+const sortValue = (row, key) => key in { proposal: 1, negotiation: 1, execution_plan: 1 }
+  ? comparison(row, key)
+  : row[key] ?? "";
 
 function stageClass(stage) {
   return STAGE_CLASS[stage] || "s-na";
@@ -45,27 +50,42 @@ function render() {
   let rows = ROWS.filter((r) => {
     if (stage && r.stage !== stage) return false;
     if (!q) return true;
-    return [r.rfp, r.title, r.summary, r.deliverables, r.stage, ...(r.requirements_detail || [])]
-      .join(" ").toLowerCase().includes(q);
+    return [
+      r.rfp, r.category, r.title, r.summary, r.deliverables, r.stage,
+      ...(r.requirements_detail || []),
+      comparison(r, "rfp_detail"), comparison(r, "proposal"),
+      comparison(r, "negotiation"), comparison(r, "execution_plan")
+    ].join(" ").toLowerCase().includes(q);
   });
 
   rows.sort((a, b) => {
-    const av = a[sortKey] ?? "", bv = b[sortKey] ?? "";
+    const av = sortValue(a, sortKey), bv = sortValue(b, sortKey);
     return av < bv ? -sortDir : av > bv ? sortDir : 0;
   });
 
   $("count").textContent = `${rows.length} / ${ROWS.length}건`;
-  $("tbody").innerHTML = rows.map((r) => `
-    <tr>
-      <td class="col-rfp">${escapeHtml(r.rfp)}</td>
-      <td class="col-req">
-        <p class="req-title">${escapeHtml(r.title)}</p>
-        <p class="req-summary">${escapeHtml(r.summary)}</p>
-        <button class="detail-btn" type="button" data-rfp="${escapeHtml(r.rfp)}">세부내용 보기</button>
-      </td>
-      <td class="col-out">${escapeHtml(r.deliverables).replace(/;\s*/g, "<br>")}</td>
-      <td class="col-stage"><span class="badge ${stageClass(r.stage)}">${escapeHtml(r.stage)}</span></td>
-    </tr>`).join("");
+  $("tbody").innerHTML = rows.map((r) => {
+    const comparisonSource = r.task_comparison || {};
+    const pages = Array.isArray(comparisonSource.pages) && comparisonSource.pages.length
+      ? `p.${comparisonSource.pages.join(", ")}` : "";
+    const negotiation = comparison(r, "negotiation");
+    return `
+      <tr>
+        <td class="col-rfp">
+          <p class="req-code">${escapeHtml(r.rfp)} · ${escapeHtml(r.category)}</p>
+          <p class="req-title">${escapeHtml(r.title)}</p>
+          <p class="req-summary">${escapeHtml(r.summary)}</p>
+          <p class="deliverable"><b>산출물</b> · ${formatMultiline(r.deliverables).replace(/;\s*/g, "<br>")}</p>
+          <p class="source-ref">${escapeHtml(comparisonSource.source || "RFP 원문")} ${escapeHtml(pages)}</p>
+          <p class="matrix-text">${formatMultiline(comparison(r, "rfp_detail") || "원문 세부내용 미기록")}</p>
+          <button class="detail-btn" type="button" data-rfp="${escapeHtml(r.rfp)}">관리용 세부내용 보기</button>
+        </td>
+        <td class="col-proposal matrix-cell">${formatMultiline(comparison(r, "proposal") || "제안서 대응 내용 미기록")}</td>
+        <td class="col-negotiation matrix-cell ${negotiation ? "" : "is-empty"}">${formatMultiline(negotiation || "기록 없음")}</td>
+        <td class="col-execution matrix-cell">${formatMultiline(comparison(r, "execution_plan") || "사업수행계획서 내용 미기록")}</td>
+        <td class="col-stage"><span class="badge ${stageClass(r.stage)}">${escapeHtml(r.stage)}</span></td>
+      </tr>`;
+  }).join("");
 }
 
 function openDetail(rfp) {
