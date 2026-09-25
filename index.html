@@ -42,6 +42,24 @@
   </div>
 </dialog>
 
+<dialog id="detail-modal">
+  <div class="modal-head">
+    <div>
+      <p id="detail-category" class="detail-category"></p>
+      <h2 id="detail-title"></h2>
+    </div>
+    <button id="detail-close" class="icon-btn" type="button" aria-label="닫기">✕</button>
+  </div>
+  <div class="modal-body detail-body">
+    <h3>요약</h3>
+    <p id="detail-summary"></p>
+    <h3>세부 요구사항</h3>
+    <ul id="detail-list"></ul>
+    <h3>검수·제출 산출물</h3>
+    <p id="detail-deliverables"></p>
+  </div>
+</dialog>
+
 <div class="controls">
   <input id="search" type="search" placeholder="RFP번호·요구사항·산출물 검색…" autocomplete="off">
   <select id="stage-filter">
